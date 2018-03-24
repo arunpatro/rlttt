@@ -120,7 +120,7 @@ class Board(object):
 
         if self.win():
             print 'Done'
-            b.show()
+            self.show()
             exit()
         pass
 
