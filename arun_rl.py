@@ -30,6 +30,7 @@ class Net(nn.Module):
         return out
     
 # q_net = Net(input_size, hidden_size, num_classes)
+print 'Loading existing model.'
 q_net = torch.load('arun_qnet.tz') 
 
 # Loss and Optimizer
@@ -53,7 +54,7 @@ def think_move(state, player):
 
 
 def update_q(state, player = 1):
-    print 'q player', player
+    print 'Bot player ', player
     state = Variable(torch.from_numpy(state))
     optimizer.zero_grad()  # zero the gradient buffer
     qsa = q_net(state)
@@ -70,6 +71,7 @@ def update_q(state, player = 1):
     max_a_idx = np.argmax(q_s_a_)
     # print max_a_idx, type(max_a_idx)
     max_q_s_a_ = np.max(q_s_a_)
+    print 'Playing move ', max_a_idx
     qTarget = qsa.clone()
     qTarget[max_a_idx] = reward(state, max_a_idx, player) + gamma * max_q_s_a_
 
@@ -89,9 +91,10 @@ def reward(state, max_a_idx, player = -1):
         return -20
     else:
         # print temp_state[max_a_idx], type(temp_state[max_a_idx]), player, type(player)
-        temp_state[max_a_idx] += player
+        print 'Bot player: ', player
+        temp_state[max_a_idx] = temp_state[max_a_idx] + player
         for i in winning_states:
-            if temp_state[i[0]] == temp_state[i[1]] == temp_state[i[2]] == player:
+            if temp_state[i[0]].data.numpy() == temp_state[i[1]].data.numpy() == temp_state[i[2]].data.numpy() == player:
                 return 1
         return 0.1
 
@@ -116,6 +119,10 @@ class Board(object):
 
     def play(self, action, player):
         if self.state[action] == 0:
+            self.state[action] += player
+        else:
+            print 'Error choosing move. Playing random move.'
+            action = self.state
             self.state[action] += player
 
         if self.win():
@@ -143,10 +150,16 @@ def main():
 
     b.show()
 
-    for i in range(5):
+    for i in range(100):
         if i % 2 == 0:
             print 'Enter position (0-9) for [' + choice + ']:'
-            move = int(raw_input())
+            while True:
+                move = int(raw_input())
+                print move
+                if not move in np.nonzero(b.state)[0]:
+                    break
+                print move, ' Already taken. Play another.'
+
             b.play(move, b.player)
             b.show()
         else:
